@@ -2,7 +2,7 @@
 title: 图解 Golang Channel 原理
 author: neil
 date: 2022-08-03 21:42:00 +0800
-categories: [技术]
+categories: [技术, Golang]
 tags: [面试, Golang]
 img_path: /posts/20220803/
 ---
