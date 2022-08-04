@@ -4,21 +4,15 @@ author: neil
 date: 2022-08-03 21:42:00 +0800
 categories: [技术]
 tags: [面试, Golang]
-image:
-  path: /posts/20220803/
-  width: 1000   # in pixels
-  height: 400   # in pixels
-  alt: image alternative text
+img_path: /posts/20220803/
 ---
-
-[toc]
 
 
 #### 基础概念
 
 Channel 是 Golang 的核心类型，常用于多个 Goroutine 之间的通信。可以把 Channel 理解成是一个单向的管道，具有 FIFO 特性。
 
-![image-20220803220239287.png](/posts/20220803/image-20220803220239287.png)
+![image-20220803220239287.png](image-20220803220239287.png)
 
 Channel 是有容量限制的
 1. 当容量是 0 时，称为无缓冲 Channel。发送和接收只有一方就绪时，就绪方会被阻塞直到另一方也就绪。
@@ -66,14 +60,14 @@ type hchan struct {
 #### 图解发送数据
 
 
-![image-20220803220324301.png](/posts/20220803/image-20220803220324301.png)
+![image-20220803220324301.png](image-20220803220324301.png)
 
 注：无缓冲 Channel 原理类似不做赘述
 
 
 #### 图解接收数据
 
-![image-20220803220345955.png](/posts/20220803/image-20220803220345955.png)
+![image-20220803220345955.png](image-20220803220345955.png)
 
 注：无缓冲 Channel 原理类似不做赘述
 
