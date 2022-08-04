@@ -8,7 +8,7 @@ img_path: /posts/20220803/
 ---
 
 
-#### 基础概念
+## 基础概念
 
 Channel 是 Golang 的核心类型，常用于多个 Goroutine 之间的通信。可以把 Channel 理解成是一个单向的管道，具有 FIFO 特性。
 
@@ -19,7 +19,7 @@ Channel 是有容量限制的
 2. 当容量大于 0 时，称为有缓冲 Channel。当传输中的元素个数超过容量时，发送方将会被阻塞直到有可用的缓冲空间出现；当传输中的元素个数为 0 时，消费方将会被阻塞直到缓冲空间出现新的数据。
 
 
-#### 数据结构
+## 数据结构
 
 ```golang
 type hchan struct {
@@ -57,7 +57,7 @@ type hchan struct {
 - lock，多 goroutine 读写的并发保护锁
 
 
-#### 图解发送数据
+## 图解发送数据
 
 
 ![image-20220803220324301.png](image-20220803220324301.png)
@@ -65,19 +65,19 @@ type hchan struct {
 注：无缓冲 Channel 原理类似不做赘述
 
 
-#### 图解接收数据
+## 图解接收数据
 
 ![image-20220803220345955.png](image-20220803220345955.png)
 
 注：无缓冲 Channel 原理类似不做赘述
 
 
-#### 源码解读
+## 源码解读
 
 [在线源码](https://github.com/golang/go/blob/master/src/runtime/chan.go)
 
 
-##### 发送数据
+### 发送数据
 
 ```golang
 func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
