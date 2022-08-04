@@ -102,7 +102,7 @@ type slice struct {
 ```
 
 
-![image.png](https://raw.githubusercontent.com/neilzhang/chirpy-images/main/posts/20220804/20220804152930.png)
+![image.png](https://raw.githubusercontent.com/neilzhang/blog-images/main/posts/20220804/20220804152930.png)
 
 
 ## 扩容机制
