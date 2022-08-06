@@ -1,0 +1,219 @@
+<!DOCTYPE html><html lang="en" ><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="generator" content="Jekyll v4.2.2" /><meta property="og:title" content="Golang 避坑指南之 time.After" /><meta name="author" content="Neil Zhang" /><meta property="og:locale" content="en" /><meta name="description" content="如何简单实现请求调用的超时机制呢？有了 time.After 当然就很简单啦，代码如下：" /><meta property="og:description" content="如何简单实现请求调用的超时机制呢？有了 time.After 当然就很简单啦，代码如下：" /><link rel="canonical" href="https://neilzhang.github.io/posts/golang-bad-case-of-time-after/" /><meta property="og:url" content="https://neilzhang.github.io/posts/golang-bad-case-of-time-after/" /><meta property="og:site_name" content="Neil" /><meta property="og:type" content="article" /><meta property="article:published_time" content="2022-08-06T11:53:00+08:00" /><meta name="twitter:card" content="summary" /><meta property="twitter:title" content="Golang 避坑指南之 time.After" /><meta name="twitter:site" content="@zhanghuanbin" /><meta name="twitter:creator" content="@Neil Zhang" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Neil Zhang","url":"https://github.com/neilzhang/"},"dateModified":"2022-08-06T11:53:00+08:00","datePublished":"2022-08-06T11:53:00+08:00","description":"如何简单实现请求调用的超时机制呢？有了 time.After 当然就很简单啦，代码如下：","headline":"Golang 避坑指南之 time.After","mainEntityOfPage":{"@type":"WebPage","@id":"https://neilzhang.github.io/posts/golang-bad-case-of-time-after/"},"url":"https://neilzhang.github.io/posts/golang-bad-case-of-time-after/"}</script><title>Golang 避坑指南之 time.After | Neil</title><link rel="apple-touch-icon" sizes="180x180" href="/assets/img/favicons/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicons/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicons/favicon-16x16.png"><link rel="manifest" href="/assets/img/favicons/site.webmanifest"><link rel="shortcut icon" href="/assets/img/favicons/favicon.ico"><meta name="apple-mobile-web-app-title" content="Neil"><meta name="application-name" content="Neil"><meta name="msapplication-TileColor" content="#da532c"><meta name="msapplication-config" content="/assets/img/favicons/browserconfig.xml"><meta name="theme-color" content="#ffffff"><link rel="preconnect" href="https://fonts.googleapis.com" ><link rel="dns-prefetch" href="https://fonts.googleapis.com" ><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="dns-prefetch" href="https://fonts.gstatic.com" crossorigin><link rel="preconnect" href="https://fonts.googleapis.com" ><link rel="dns-prefetch" href="https://fonts.googleapis.com" ><link rel="preconnect" href="https://cdn.jsdelivr.net" ><link rel="dns-prefetch" href="https://cdn.jsdelivr.net" ><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato&family=Source+Sans+Pro:wght@400;600;700;900&display=swap"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.11.2/css/all.min.css"><link rel="stylesheet" href="/assets/css/style.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@1.0.1/dist/bootstrap-toc.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/magnific-popup@1/dist/magnific-popup.min.css"> <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script> <script type="text/javascript"> class ModeToggle { static get MODE_KEY() { return "mode"; } static get MODE_ATTR() { return "data-mode"; } static get DARK_MODE() { return "dark"; } static get LIGHT_MODE() { return "light"; } static get ID() { return "mode-toggle"; } constructor() { if (this.hasMode) { if (this.isDarkMode) { if (!this.isSysDarkPrefer) { this.setDark(); } } else { if (this.isSysDarkPrefer) { this.setLight(); } } } let self = this; /* always follow the system prefers */ this.sysDarkPrefers.addEventListener("change", () => { if (self.hasMode) { if (self.isDarkMode) { if (!self.isSysDarkPrefer) { self.setDark(); } } else { if (self.isSysDarkPrefer) { self.setLight(); } } self.clearMode(); } self.notify(); }); } /* constructor() */ get sysDarkPrefers() { return window.matchMedia("(prefers-color-scheme: dark)"); } get isSysDarkPrefer() { return this.sysDarkPrefers.matches; } get isDarkMode() { return this.mode === ModeToggle.DARK_MODE; } get isLightMode() { return this.mode === ModeToggle.LIGHT_MODE; } get hasMode() { return this.mode != null; } get mode() { return sessionStorage.getItem(ModeToggle.MODE_KEY); } /* get the current mode on screen */ get modeStatus() { if (this.isDarkMode || (!this.hasMode && this.isSysDarkPrefer)) { return ModeToggle.DARK_MODE; } else { return ModeToggle.LIGHT_MODE; } } setDark() { $('html').attr(ModeToggle.MODE_ATTR, ModeToggle.DARK_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE); } setLight() { $('html').attr(ModeToggle.MODE_ATTR, ModeToggle.LIGHT_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE); } clearMode() { $('html').removeAttr(ModeToggle.MODE_ATTR); sessionStorage.removeItem(ModeToggle.MODE_KEY); } /* Notify another plugins that the theme mode has changed */ notify() { window.postMessage({ direction: ModeToggle.ID, message: this.modeStatus }, "*"); } } /* ModeToggle */ const toggle = new ModeToggle(); function flipMode() { if (toggle.hasMode) { if (toggle.isSysDarkPrefer) { if (toggle.isLightMode) { toggle.clearMode(); } else { toggle.setLight(); } } else { if (toggle.isDarkMode) { toggle.clearMode(); } else { toggle.setDark(); } } } else { if (toggle.isSysDarkPrefer) { toggle.setLight(); } else { toggle.setDark(); } } toggle.notify(); } /* flipMode() */ </script><body data-spy="scroll" data-target="#toc" data-topbar-visible="true"><div id="sidebar" class="d-flex flex-column align-items-end"><div class="profile-wrapper text-center"><div id="avatar"> <a href="/" class="mx-auto"> <img src="https://raw.githubusercontent.com/neilzhang/blog-images/main/commons/avatar.jpg" alt="avatar" onerror="this.style.display='none'"> </a></div><div class="site-title mt-3"> <a href="/">Neil</a></div><div class="site-subtitle font-italic">一个没啥追求的程序员</div></div><ul class="w-100"><li class="nav-item"> <a href="/" class="nav-link"> <i class="fa-fw fas fa-home ml-xl-3 mr-xl-3 unloaded"></i> <span>HOME</span> </a><li class="nav-item"> <a href="/categories/" class="nav-link"> <i class="fa-fw fas fa-stream ml-xl-3 mr-xl-3 unloaded"></i> <span>CATEGORIES</span> </a><li class="nav-item"> <a href="/tags/" class="nav-link"> <i class="fa-fw fas fa-tag ml-xl-3 mr-xl-3 unloaded"></i> <span>TAGS</span> </a><li class="nav-item"> <a href="/archives/" class="nav-link"> <i class="fa-fw fas fa-archive ml-xl-3 mr-xl-3 unloaded"></i> <span>ARCHIVES</span> </a><li class="nav-item"> <a href="/about/" class="nav-link"> <i class="fa-fw fas fa-info-circle ml-xl-3 mr-xl-3 unloaded"></i> <span>ABOUT</span> </a></ul><div class="sidebar-bottom mt-auto d-flex flex-wrap justify-content-center align-items-center"> <button class="mode-toggle btn" aria-label="Switch Mode"> <i class="fas fa-adjust"></i> </button> <span class="icon-border"></span> <a href="https://github.com/neilzhang" aria-label="github" target="_blank" rel="noopener"> <i class="fab fa-github"></i> </a> <a href="https://twitter.com/zhanghuanbin" aria-label="twitter" target="_blank" rel="noopener"> <i class="fab fa-twitter"></i> </a> <a href=" javascript:location.href = 'mailto:' + ['zhanghuanbin_good','gmail.com'].join('@')" aria-label="email" > <i class="fas fa-envelope"></i> </a> <a href="/feed.xml" aria-label="rss" > <i class="fas fa-rss"></i> </a></div></div><div id="topbar-wrapper"><div id="topbar" class="container d-flex align-items-center justify-content-between h-100 pl-3 pr-3 pl-md-4 pr-md-4"> <span id="breadcrumb"> <span> <a href="/"> Home </a> </span> <span>Golang 避坑指南之 time.After</span> </span> <i id="sidebar-trigger" class="fas fa-bars fa-fw"></i><div id="topbar-title"> Post</div><i id="search-trigger" class="fas fa-search fa-fw"></i> <span id="search-wrapper" class="align-items-center"> <i class="fas fa-search fa-fw"></i> <input class="form-control" id="search-input" type="search" aria-label="search" autocomplete="off" placeholder="Search..."> </span> <span id="search-cancel" >Cancel</span></div></div><div id="main-wrapper" class="d-flex justify-content-center"><div id="main" class="container pl-xl-4 pr-xl-4"><div class="row"><div id="core-wrapper" class="col-12 col-lg-11 col-xl-9 pr-xl-4"><div class="post pl-1 pr-1 pl-md-2 pr-md-2"><h1 data-toc-skip>Golang 避坑指南之 time.After</h1><div class="post-meta text-muted"> <span> Posted <em class="" data-ts="1659757980" data-df="ll" data-toggle="tooltip" data-placement="bottom"> Aug 6, 2022 </em> </span><div class="d-flex justify-content-between"> <span> By <em> <a href="https://github.com/neilzhang/">Neil Zhang</a> </em> </span><div> <span class="readtime" data-toggle="tooltip" data-placement="bottom" title="1396 words"> <em>7 min</em> read</span></div></div></div><div class="post-content"><p>如何简单实现请求调用的超时机制呢？有了 <code class="language-plaintext highlighter-rouge">time.After</code> 当然就很简单啦，代码如下：</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="Copied!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+</pre><td class="rouge-code"><pre><span class="k">func</span> <span class="n">AsyncCallWithTimeout1</span><span class="p">()</span> <span class="p">{</span>
+	<span class="n">ctx</span><span class="p">,</span> <span class="n">cancel</span> <span class="o">:=</span> <span class="n">context</span><span class="o">.</span><span class="n">WithCancel</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">Background</span><span class="p">())</span>
+	<span class="k">go</span> <span class="k">func</span><span class="p">(</span><span class="n">ctx</span> <span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">defer</span> <span class="n">cancel</span><span class="p">()</span>
+		<span class="c">// 模拟请求调用</span>
+		<span class="n">time</span><span class="o">.</span><span class="n">Sleep</span><span class="p">(</span><span class="m">200</span> <span class="o">*</span> <span class="n">time</span><span class="o">.</span><span class="n">Millisecond</span><span class="p">)</span>
+	<span class="p">}(</span><span class="n">ctx</span><span class="p">)</span>
+
+	<span class="k">select</span> <span class="p">{</span>
+	<span class="k">case</span> <span class="o">&lt;-</span><span class="n">ctx</span><span class="o">.</span><span class="n">Done</span><span class="p">()</span><span class="o">:</span>
+		<span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="s">"call successfully!!!"</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="k">case</span> <span class="o">&lt;-</span><span class="n">time</span><span class="o">.</span><span class="n">After</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">Duration</span><span class="p">(</span><span class="m">3</span> <span class="o">*</span> <span class="n">time</span><span class="o">.</span><span class="n">Second</span><span class="p">))</span><span class="o">:</span>
+		<span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="s">"timeout!!!"</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>测试该方法，输出如下：</p><div class="language-sh highlighter-rouge"><div class="code-header"> <span data-label-text="Shell"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="Copied!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+</pre><td class="rouge-code"><pre>hello % go run ./hello.go 
+call successfully!!!
+</pre></table></code></div></div><p>和我们期待的一样，成功了，没有超时。 让我们再测试下超时场景，修改模拟请求调用的超时时间为 4 秒，然后再测试该方法，输出如下：</p><div class="language-sh highlighter-rouge"><div class="code-header"> <span data-label-text="Shell"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="Copied!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+</pre><td class="rouge-code"><pre>hello % go run ./hello.go
+<span class="nb">timeout</span><span class="o">!!!</span>
+</pre></table></code></div></div><p>果然发生了超时，这就是我们想要的功能，如此简单。 不过优秀的程序猿都会仔细阅读 API 文档，让我们一起来看下：</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="Copied!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre><td class="rouge-code"><pre><span class="c">// After waits for the duration to elapse and then sends the current time</span>
+<span class="c">// on the returned channel.</span>
+<span class="c">// It is equivalent to NewTimer(d).C.</span>
+<span class="c">// The underlying Timer is not recovered by the garbage collector</span>
+<span class="c">// until the timer fires. If efficiency is a concern, use NewTimer</span>
+<span class="c">// instead and call Timer.Stop if the timer is no longer needed.</span>
+<span class="k">func</span> <span class="n">After</span><span class="p">(</span><span class="n">d</span> <span class="n">Duration</span><span class="p">)</span> <span class="o">&lt;-</span><span class="k">chan</span> <span class="n">Time</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="n">NewTimer</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="o">.</span><span class="n">C</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>凭借多年 <a href="https://translate.google.com/?hl=zh-CN">google 翻译</a> 使用经验，这里大概意思是：</p><blockquote><p><code class="language-plaintext highlighter-rouge">Timer</code> 不会被 GC 回收直到它被触发，如果需要考虑效率的话，<code class="language-plaintext highlighter-rouge">Timer</code> 不再被需要时，需要主动调用 <code class="language-plaintext highlighter-rouge">Timer.Stop</code>。</p></blockquote><p>卧槽，还好这次没有草率。如果有大量请求调用的场景，使用 <code class="language-plaintext highlighter-rouge">time.After</code> 会导致有大量的 <code class="language-plaintext highlighter-rouge">Timer</code> 对象被延迟释放，造成大量内存浪费。 原来正确的使用姿势应该是这个样子的：</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="Copied!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre><td class="rouge-code"><pre><span class="k">func</span> <span class="n">AsyncCallWithTimeout2</span><span class="p">()</span> <span class="p">{</span>
+	<span class="n">ctx</span><span class="p">,</span> <span class="n">cancel</span> <span class="o">:=</span> <span class="n">context</span><span class="o">.</span><span class="n">WithCancel</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">Background</span><span class="p">())</span>
+
+	<span class="k">go</span> <span class="k">func</span><span class="p">()</span> <span class="p">{</span>
+		<span class="k">defer</span> <span class="n">cancel</span><span class="p">()</span>
+		<span class="c">// 模拟请求调用</span>
+		<span class="n">time</span><span class="o">.</span><span class="n">Sleep</span><span class="p">(</span><span class="m">200</span> <span class="o">*</span> <span class="n">time</span><span class="o">.</span><span class="n">Millisecond</span><span class="p">)</span>
+	<span class="p">}()</span>
+
+	<span class="n">timer</span> <span class="o">:=</span> <span class="n">time</span><span class="o">.</span><span class="n">NewTimer</span><span class="p">(</span><span class="m">3</span> <span class="o">*</span> <span class="n">time</span><span class="o">.</span><span class="n">Second</span><span class="p">)</span>
+	<span class="k">defer</span> <span class="n">timer</span><span class="o">.</span><span class="n">Stop</span><span class="p">()</span>
+	<span class="k">select</span> <span class="p">{</span>
+	<span class="k">case</span> <span class="o">&lt;-</span><span class="n">ctx</span><span class="o">.</span><span class="n">Done</span><span class="p">()</span><span class="o">:</span>
+		<span class="c">// fmt.Println("call successfully!!!")</span>
+		<span class="k">return</span>
+	<span class="k">case</span> <span class="o">&lt;-</span><span class="n">timer</span><span class="o">.</span><span class="n">C</span><span class="o">:</span>
+		<span class="c">// fmt.Println("timeout!!!")</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>本着优秀程序猿是不会有 <del>bug</del> 的精神，让我们来验证下这个姿势还有没有问题。简单的测试代码如下：</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="Copied!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre><td class="rouge-code"><pre><span class="k">func</span> <span class="n">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">var</span> <span class="n">wg</span> <span class="n">sync</span><span class="o">.</span><span class="n">WaitGroup</span>
+	<span class="k">for</span> <span class="n">i</span> <span class="o">:=</span> <span class="m">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="m">1000000</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="n">wg</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
+		<span class="k">go</span> <span class="k">func</span><span class="p">()</span> <span class="p">{</span>
+			<span class="n">AsyncCallWithTimeout1</span><span class="p">()</span>
+			<span class="c">// AsyncCallWithTimeout2()</span>
+			<span class="n">wg</span><span class="o">.</span><span class="n">Done</span><span class="p">()</span>
+		<span class="p">}()</span>
+	<span class="p">}</span>
+	<span class="n">wg</span><span class="o">.</span><span class="n">Wait</span><span class="p">()</span>
+	<span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="s">"all done!!!"</span><span class="p">)</span>
+
+	<span class="k">for</span> <span class="n">i</span> <span class="o">:=</span> <span class="m">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="m">6</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="n">runtime</span><span class="o">.</span><span class="n">GC</span><span class="p">()</span>
+		<span class="n">time</span><span class="o">.</span><span class="n">Sleep</span><span class="p">(</span><span class="m">1</span> <span class="o">*</span> <span class="n">time</span><span class="o">.</span><span class="n">Second</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>运行程序，测试关键输出如下:</p><div class="language-sh highlighter-rouge"><div class="code-header"> <span data-label-text="Shell"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="Copied!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+</pre><td class="rouge-code"><pre>hello % <span class="nv">GODEBUG</span><span class="o">=</span><span class="nv">gctrace</span><span class="o">=</span>1 go run ./hello.go
+<span class="c"># command-line-arguments</span>
+gc 1 @0.001s 12%: 0.006+2.2+0.017 ms clock, 0.075+1.5/4.1/0.75+0.21 ms cpu, 5-&gt;6-&gt;6 MB, 6 MB goal, 12 P
+gc 2 @0.013s 5%: 0.004+2.2+0.017 ms clock, 0.053+0.85/4.1/2.8+0.21 ms cpu, 11-&gt;11-&gt;10 MB, 12 MB goal, 12 P
+gc 3 @0.043s 3%: 0.004+3.6+0.005 ms clock, 0.058+0.15/9.7/9.7+0.065 ms cpu, 20-&gt;20-&gt;18 MB, 21 MB goal, 12 P
+gc 1 @0.010s 6%: 0.10+23+0.33 ms clock, 1.2+14/5.9/0+3.9 ms cpu, 4-&gt;7-&gt;6 MB, 5 MB goal, 12 P
+gc 2 @0.041s 15%: 0.14+7.0+0.14 ms clock, 1.6+42/20/0+1.7 ms cpu, 10-&gt;11-&gt;10 MB, 12 MB goal, 12 P
+gc 3 @0.059s 20%: 0.28+23+0.20 ms clock, 3.4+77/28/0+2.5 ms cpu, 17-&gt;19-&gt;17 MB, 21 MB goal, 12 P
+gc 4 @0.108s 22%: 0.053+32+0.23 ms clock, 0.64+121/49/0+2.8 ms cpu, 29-&gt;32-&gt;30 MB, 35 MB goal, 12 P
+gc 5 @0.183s 25%: 0.076+27+0.20 ms clock, 0.91+196/77/0+2.4 ms cpu, 49-&gt;52-&gt;50 MB, 60 MB goal, 12 P
+gc 6 @0.293s 28%: 0.11+47+0.093 ms clock, 1.3+376/140/0.086+1.1 ms cpu, 85-&gt;86-&gt;79 MB, 100 MB goal, 12 P
+gc 7 @0.463s 30%: 0.071+72+0.13 ms clock, 0.85+584/214/0+1.6 ms cpu, 142-&gt;144-&gt;128 MB, 158 MB goal, 12 P
+gc 8 @0.745s 29%: 0.36+122+1.2 ms clock, 4.3+767/337/0+14 ms cpu, 237-&gt;237-&gt;202 MB, 256 MB goal, 12 P
+gc 9 @1.194s 29%: 0.13+189+0.99 ms clock, 1.6+1234/513/0+11 ms cpu, 388-&gt;391-&gt;312 MB, 405 MB goal, 12 P
+all <span class="k">done</span><span class="o">!!!</span>
+gc 10 @2.050s 20%: 30+138+0.006 ms clock, 362+0/366/1011+0.081 ms cpu, 565-&gt;565-&gt;364 MB, 624 MB goal, 12 P <span class="o">(</span>forced<span class="o">)</span>
+gc 11 @3.271s 14%: 0.082+104+0.041 ms clock, 0.98+0/295/853+0.49 ms cpu, 364-&gt;364-&gt;353 MB, 729 MB goal, 12 P <span class="o">(</span>forced<span class="o">)</span>
+gc 12 @4.411s 11%: 0.024+78+0.29 ms clock, 0.29+0/206/499+3.5 ms cpu, 353-&gt;353-&gt;250 MB, 706 MB goal, 12 P <span class="o">(</span>forced<span class="o">)</span>
+gc 13 @5.534s 9%: 0.035+31+0.006 ms clock, 0.42+0/61/308+0.082 ms cpu, 250-&gt;250-&gt;166 MB, 500 MB goal, 12 P <span class="o">(</span>forced<span class="o">)</span>
+gc 14 @6.596s 7%: 0.026+30+0.005 ms clock, 0.31+0/58/292+0.062 ms cpu, 166-&gt;166-&gt;166 MB, 332 MB goal, 12 P <span class="o">(</span>forced<span class="o">)</span>
+gc 15 @7.641s 6%: 0.027+31+0.006 ms clock, 0.33+0/79/283+0.076 ms cpu, 166-&gt;166-&gt;166 MB, 332 MB goal, 12 P <span class="o">(</span>forced<span class="o">)</span>
+</pre></table></code></div></div><p>切换到 <code class="language-plaintext highlighter-rouge">AsyncCallWithTimeout2</code> ，运行程序，测试关键输出如下：</p><div class="language-sh highlighter-rouge"><div class="code-header"> <span data-label-text="Shell"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="Copied!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre><td class="rouge-code"><pre>hello % <span class="nv">GODEBUG</span><span class="o">=</span><span class="nv">gctrace</span><span class="o">=</span>1 go run ./hello.go
+<span class="c"># command-line-arguments</span>
+gc 1 @0.002s 8%: 0.007+2.2+0.021 ms clock, 0.091+0.19/4.9/0.39+0.25 ms cpu, 4-&gt;7-&gt;6 MB, 5 MB goal, 12 P
+gc 2 @0.014s 5%: 0.005+2.9+0.019 ms clock, 0.065+0/5.8/0.39+0.23 ms cpu, 10-&gt;11-&gt;10 MB, 12 MB goal, 12 P
+gc 3 @0.040s 4%: 0.003+3.8+0.020 ms clock, 0.044+0.19/10/6.5+0.24 ms cpu, 18-&gt;19-&gt;17 MB, 20 MB goal, 12 P
+gc 4 @0.082s 3%: 0.004+6.3+0.019 ms clock, 0.048+0/17/4.3+0.23 ms cpu, 31-&gt;33-&gt;28 MB, 34 MB goal, 12 P
+gc 1 @0.008s 2%: 0.054+141+0.72 ms clock, 0.64+31/5.5/0+8.7 ms cpu, 4-&gt;25-&gt;24 MB, 5 MB goal, 12 P
+gc 2 @0.179s 13%: 0.17+28+0.10 ms clock, 2.0+214/82/0+1.2 ms cpu, 38-&gt;41-&gt;37 MB, 48 MB goal, 12 P
+gc 3 @0.263s 18%: 0.19+66+0.15 ms clock, 2.3+286/111/0+1.9 ms cpu, 62-&gt;68-&gt;64 MB, 75 MB goal, 12 P
+gc 4 @0.412s 24%: 0.080+57+0.10 ms clock, 0.96+441/167/0+1.2 ms cpu, 109-&gt;110-&gt;100 MB, 128 MB goal, 12 P
+gc 5 @0.603s 27%: 0.16+92+0.29 ms clock, 1.9+713/261/0+3.5 ms cpu, 180-&gt;184-&gt;154 MB, 200 MB goal, 12 P
+gc 6 @0.957s 27%: 1.0+127+1.9 ms clock, 12+799/359/0+23 ms cpu, 291-&gt;292-&gt;203 MB, 308 MB goal, 12 P
+gc 7 @1.417s 27%: 0.59+189+2.2 ms clock, 7.0+1176/511/0+26 ms cpu, 386-&gt;389-&gt;255 MB, 407 MB goal, 12 P
+all <span class="k">done</span><span class="o">!!!</span>
+gc 8 @2.171s 20%: 29+92+0.005 ms clock, 351+0/146/314+0.070 ms cpu, 408-&gt;408-&gt;158 MB, 510 MB goal, 12 P <span class="o">(</span>forced<span class="o">)</span>
+gc 9 @3.344s 14%: 0.025+34+0.006 ms clock, 0.30+0/69/297+0.078 ms cpu, 158-&gt;158-&gt;158 MB, 317 MB goal, 12 P <span class="o">(</span>forced<span class="o">)</span>
+gc 10 @4.394s 11%: 0.025+29+0.005 ms clock, 0.30+0/59/288+0.061 ms cpu, 158-&gt;158-&gt;158 MB, 317 MB goal, 12 P <span class="o">(</span>forced<span class="o">)</span>
+gc 11 @5.438s 9%: 0.024+32+0.004 ms clock, 0.29+0/72/285+0.058 ms cpu, 158-&gt;158-&gt;158 MB, 317 MB goal, 12 P <span class="o">(</span>forced<span class="o">)</span>
+gc 12 @6.486s 7%: 0.024+33+0.008 ms clock, 0.29+0/67/310+0.10 ms cpu, 158-&gt;158-&gt;158 MB, 317 MB goal, 12 P <span class="o">(</span>forced<span class="o">)</span>
+gc 13 @7.535s 6%: 0.020+30+0.007 ms clock, 0.24+0/60/293+0.089 ms cpu, 158-&gt;158-&gt;158 MB, 317 MB goal, 12 P <span class="o">(</span>forced<span class="o">)</span>
+</pre></table></code></div></div><p>对比两个的 GC 日志，可以发现 <code class="language-plaintext highlighter-rouge">AsyncCallWithTimeout2</code> 比 <code class="language-plaintext highlighter-rouge">AsyncCallWithTimeout1</code> 的内存回收会及时很多，这也符合 time.After 文档给的解释。</p><p>所以结论是：</p><blockquote><p><code class="language-plaintext highlighter-rouge">time.After</code> 创建的 <code class="language-plaintext highlighter-rouge">Timer</code> 对象需要等到 <code class="language-plaintext highlighter-rouge">Timer</code> 被触发时才能被 GC 回收释放，使用不当会造成内存浪费</p></blockquote><p>开发环境：</p><blockquote><p>go 1.14</p></blockquote></div><div class="post-tail-wrapper text-muted"><div class="post-meta mb-3"> <i class="far fa-folder-open fa-fw mr-1"></i> <a href='/categories/%E6%8A%80%E6%9C%AF/'>技术</a>, <a href='/categories/golang/'>Golang</a></div><div class="post-tags"> <i class="fa fa-tags fa-fw mr-1"></i> <a href="/tags/%E8%B8%A9%E5%9D%91/" class="post-tag no-text-decoration" >踩坑</a> <a href="/tags/golang/" class="post-tag no-text-decoration" >Golang</a></div><div class="post-tail-bottom d-flex justify-content-between align-items-center mt-3 pt-5 pb-2"><div class="license-wrapper"> This post is licensed under <a href="https://creativecommons.org/licenses/by/4.0/"> CC BY 4.0 </a> by the author.</div><div class="share-wrapper"> <span class="share-label text-muted mr-1">Share</span> <span class="share-icons"> <a href="https://twitter.com/intent/tweet?text=Golang+%E9%81%BF%E5%9D%91%E6%8C%87%E5%8D%97%E4%B9%8B+time.After+-+Neil&url=https%3A%2F%2Fneilzhang.github.io%2Fposts%2Fgolang-bad-case-of-time-after%2F" data-toggle="tooltip" data-placement="top" title="Twitter" target="_blank" rel="noopener" aria-label="Twitter"> <i class="fa-fw fab fa-twitter"></i> </a> <a href="https://www.facebook.com/sharer/sharer.php?title=Golang+%E9%81%BF%E5%9D%91%E6%8C%87%E5%8D%97%E4%B9%8B+time.After+-+Neil&u=https%3A%2F%2Fneilzhang.github.io%2Fposts%2Fgolang-bad-case-of-time-after%2F" data-toggle="tooltip" data-placement="top" title="Facebook" target="_blank" rel="noopener" aria-label="Facebook"> <i class="fa-fw fab fa-facebook-square"></i> </a> <a href="https://t.me/share/url?url=https%3A%2F%2Fneilzhang.github.io%2Fposts%2Fgolang-bad-case-of-time-after%2F&text=Golang+%E9%81%BF%E5%9D%91%E6%8C%87%E5%8D%97%E4%B9%8B+time.After+-+Neil" data-toggle="tooltip" data-placement="top" title="Telegram" target="_blank" rel="noopener" aria-label="Telegram"> <i class="fa-fw fab fa-telegram"></i> </a> <i id="copy-link" class="fa-fw fas fa-link small" data-toggle="tooltip" data-placement="top" title="Copy link" data-title-succeed="Link copied successfully!"> </i> </span></div></div></div></div></div><div id="panel-wrapper" class="col-xl-3 pl-2 text-muted"><div class="access"><div id="access-lastmod" class="post"><div class="panel-heading">Recently Updated</div><ul class="post-content pl-0 pb-1 ml-1 mt-2"><li><a href="/posts/golang-channel/">图解 Golang Channel 原理</a><li><a href="/posts/golang-slice/">Golang Slice 总结</a><li><a href="/posts/how-to-design-high-concurrency-web/">如何设计一个高并发系统</a><li><a href="/posts/text-and-typography/">Text and Typography</a><li><a href="/posts/getting-started/">Getting Started</a></ul></div><div id="access-tags"><div class="panel-heading">Trending Tags</div><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/%E9%9D%A2%E8%AF%95/">面试</a> <a class="post-tag" href="/tags/golang/">Golang</a> <a class="post-tag" href="/tags/favicon/">favicon</a> <a class="post-tag" href="/tags/getting-started/">getting started</a> <a class="post-tag" href="/tags/google-analytics/">google analytics</a> <a class="post-tag" href="/tags/pageviews/">pageviews</a> <a class="post-tag" href="/tags/typography/">typography</a> <a class="post-tag" href="/tags/writing/">writing</a> <a class="post-tag" href="/tags/%E7%AE%97%E6%B3%95/">算法</a> <a class="post-tag" href="/tags/%E8%B8%A9%E5%9D%91/">踩坑</a></div></div></div></div></div><div class="row"><div id="tail-wrapper" class="col-12 col-lg-11 col-xl-9 pl-3 pr-3 pr-xl-4"><div id="related-posts" class="mt-5 mb-2 mb-sm-4"><h3 class="pt-2 mt-1 mb-4 ml-1" data-toc-skip>Further Reading</h3><div class="card-deck mb-4"><div class="card"> <a href="/posts/golang-channel/"><div class="card-body"> <em class="small" data-ts="1659534120" data-df="ll" > Aug 3, 2022 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>图解 Golang Channel 原理</h3><div class="text-muted small"><p> 基础概念 Channel 是 Golang 的核心类型，常用于多个 Goroutine 之间的通信。可以把 Channel 理解成是一个单向的管道，具有 FIFO 特性。 Channel 是有容量限制的 当容量是 0 时，称为无缓冲 Channel。发送和接收只有一方就绪时，就绪方会被阻塞直到另一方也就绪。 当容量大于 0 时，称为有缓冲 Channel。当传输中的元素个数...</p></div></div></a></div><div class="card"> <a href="/posts/golang-slice/"><div class="card-body"> <em class="small" data-ts="1659597540" data-df="ll" > Aug 4, 2022 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>Golang Slice 总结</h3><div class="text-muted small"><p> 什么是 Slice 切片是对数组的抽象，提供动态数组的能力。切片的长度是不固定的，随着元素的增加而动态变化。 数组与 Slice 的区别 数组 值类型 长度固定 编译期间检查下标访问越界行为 可以作为 map 的 key Slice 引用类型 长度可变 运行期间检查下标访问越界行为 不可以作为 map 的 key 适用场景 长...</p></div></div></a></div><div class="card"> <a href="/posts/how-to-design-high-concurrency-web/"><div class="card-body"> <em class="small" data-ts="1659756840" data-df="ll" > Aug 6, 2022 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>如何设计一个高并发系统</h3><div class="text-muted small"><p> 什么是高并发 高并发（High Concurrency）是指通过设计保证系统能够同时并行处理很多请求。 常用指标有： QPS，每秒响应请求数 TPS，每秒响应事务数 RT，响应时间，系统对请求做出响应的时间 Concurrency，并发数，系统同时能处理的请求数量 吞吐量：单位时间内处理的请求数量 提高并发的思路 降低 RT 提高 Concurren...</p></div></div></a></div></div></div><div class="post-navigation d-flex justify-content-between"> <a href="/posts/how-to-design-high-concurrency-web/" class="btn btn-outline-primary" prompt="Older"><p>如何设计一个高并发系统</p></a> <a href="/posts/string-big-number-add/" class="btn btn-outline-primary" prompt="Newer"><p>字符串大数相加</p></a></div></div></div><footer class="row pl-3 pr-3"><div class="col-12 d-flex justify-content-between align-items-center text-muted pl-0 pr-0"><div class="footer-left"><p class="mb-0"> © 2022 <a href="https://twitter.com/zhanghuanbin">zhanghuanbin</a>. <span data-toggle="tooltip" data-placement="top" title="Except where otherwise noted, the blog posts on this site are licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0) License by the author.">Some rights reserved.</span></p></div><div class="footer-right"><p class="mb-0"> Powered by <a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a> with <a href="https://github.com/cotes2020/jekyll-theme-chirpy" target="_blank" rel="noopener">Chirpy</a> theme.</p></div></div></footer></div><div id="search-result-wrapper" class="d-flex justify-content-center unloaded"><div class="col-12 col-sm-11 post-content"><div id="search-hints"><div id="access-tags"><div class="panel-heading">Trending Tags</div><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/%E9%9D%A2%E8%AF%95/">面试</a> <a class="post-tag" href="/tags/golang/">Golang</a> <a class="post-tag" href="/tags/favicon/">favicon</a> <a class="post-tag" href="/tags/getting-started/">getting started</a> <a class="post-tag" href="/tags/google-analytics/">google analytics</a> <a class="post-tag" href="/tags/pageviews/">pageviews</a> <a class="post-tag" href="/tags/typography/">typography</a> <a class="post-tag" href="/tags/writing/">writing</a> <a class="post-tag" href="/tags/%E7%AE%97%E6%B3%95/">算法</a> <a class="post-tag" href="/tags/%E8%B8%A9%E5%9D%91/">踩坑</a></div></div></div><div id="search-results" class="d-flex flex-wrap justify-content-center text-muted mt-3"></div></div></div></div><div id="mask"></div><a id="back-to-top" href="#" aria-label="back-to-top" class="btn btn-lg btn-box-shadow" role="button"> <i class="fas fa-angle-up"></i> </a><div id="notification" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-animation="true" data-autohide="false"><div class="toast-header"> <button type="button" class="ml-2 ml-auto close" data-dismiss="toast" aria-label="Close"> <span aria-hidden="true">&times;</span> </button></div><div class="toast-body text-center pt-0"><p class="pl-2 pr-2 mb-3">A new version of content is available.</p><button type="button" class="btn btn-primary" aria-label="Update"> Update </button></div></div><script src="https://cdn.jsdelivr.net/npm/simple-jekyll-search@1.10.0/dest/simple-jekyll-search.min.js"></script> <script> SimpleJekyllSearch({ searchInput: document.getElementById('search-input'), resultsContainer: document.getElementById('search-results'), json: '/assets/js/data/search.json', searchResultTemplate: '<div class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-lg-4 pr-lg-4 pl-xl-0 pr-xl-0"> <a href="{url}">{title}</a><div class="post-meta d-flex flex-column flex-sm-row text-muted mt-1 mb-1"> {categories} {tags}</div><p>{snippet}</p></div>', noResultsText: '<p class="mt-5">Oops! No results found.</p>', templateMiddleware: function(prop, value, template) { if (prop === 'categories') { if (value === '') { return `${value}`; } else { return `<div class="mr-sm-4"><i class="far fa-folder fa-fw"></i>${value}</div>`; } } if (prop === 'tags') { if (value === '') { return `${value}`; } else { return `<div><i class="fa fa-tag fa-fw"></i>${value}</div>`; } } } }); </script> <script src="https://cdn.jsdelivr.net/combine/npm/magnific-popup@1/dist/jquery.magnific-popup.min.js,npm/lozad/dist/lozad.min.js,npm/clipboard@2/dist/clipboard.min.js"></script> <script src="https://cdn.jsdelivr.net/combine/npm/dayjs@1/dayjs.min.js,npm/dayjs@1/locale/en.min.js,npm/dayjs@1/plugin/relativeTime.min.js,npm/dayjs@1/plugin/localizedFormat.min.js"></script> <script defer src="/assets/js/dist/post.min.js"></script> <script src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.bundle.min.js"></script> <script defer src="/app.js"></script>
