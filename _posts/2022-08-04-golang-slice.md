@@ -4,7 +4,6 @@ author: neil
 date: 2022-08-04 15:19:00 +0800
 categories: [技术, Golang]
 tags: [面试, Golang]
-img_path: /posts/20220804/
 ---
 
 
